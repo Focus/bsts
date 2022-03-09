@@ -144,12 +144,12 @@ class BSTS(object):
         fig, axes = plt.subplots(figsize=(12, 14), nrows=nrows)
         axes = axes.flatten()
         axes[0].plot(y_train, label='actual')
-        preds = (
-            self.samples['tau'].mean(axis=0) +
-            self.samples['mu'].mean(axis=0)
-        )
+        preds = self.samples['mu'].mean(axis=0)
+        if self.seasonality is not None:
+            preds += self.samples['tau'].mean(axis=0)
         if self.X_train is not None:
             preds += self.samples['reg_constant'].mean()
+            preds += self.X_train @ self.samples['beta'].mean(axis=0)
         preds = self.scaler.inv_transform(preds)
         axes[0].plot(preds, label='predicted')
         axes[0].set_title('Time series')
@@ -174,7 +174,7 @@ class BSTS(object):
         mean_forecast = forecast.mean(axis=0)
         std_forecast = forecast.std(axis=0)
 
-        _, ax = plt.subplots(figsize=(10, 4))
+        fig, ax = plt.subplots(figsize=(10, 4))
         x_train = np.arange(len(self.y_train))
         x_test = np.arange(
             len(self.y_train),
