@@ -12,4 +12,5 @@ def horseshoe_prior(p):
     z = numpyro.sample('z', dist.Normal(1.0, 100.0))
     lam = r_local * jnp.sqrt(rho_local)
     tau = r_global * jnp.sqrt(rho_global)
-    return z * lam * tau
+    beta = numpyro.primitives.deterministic('beta', z * lam * tau)
+    return beta
