@@ -1,3 +1,4 @@
+from typing import Optional
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -14,7 +15,17 @@ from .horseshoe import horseshoe_prior
 
 
 class BSTS(object):
-    def __init__(self, seasonality=None):
+    """Bayesian Structural Time Series
+    """
+
+    def __init__(self, seasonality: Optional[int] = None):
+        """
+
+        Parameters
+        ----------
+        seasonality : Optional[int]
+            Seasonality of the time-series
+        """
         self.seasonality = seasonality
         self.samples = None
         self.mcmc = None
@@ -95,12 +106,30 @@ class BSTS(object):
             numpyro.deterministic("y_forecast", ys[-future:])
 
     def fit(self,
-            y,
-            X=None,
-            num_warmup=2000,
-            num_samples=2000,
-            num_chains=4,
-            rng_key=random.PRNGKey(0)):
+            y: np.ndarray,
+            X: Optional[np.ndarray] = None,
+            num_warmup: int = 2000,
+            num_samples: int = 2000,
+            num_chains: int = 4,
+            rng_key: jnp.DeviceArray = random.PRNGKey(0)):
+        """Samples from the posterior of the BSTS model given the data
+
+        Parameters
+        ----------
+        y : np.ndarray
+            The time series array
+        X : Optional[np.ndarray]
+            Optional covariates for the time series. Must have same length as
+            y
+        num_warmup : int
+            Number of warmup steps for HMC
+        num_samples : int
+            Number of samples of the posterior
+        num_chains : int
+            Number of HMC chains to run
+        rng_key : jnp.DeviceArray
+            Jax random key to use
+        """
         self.y_train = jnp.array(self.scaler.fit_transform(y))
         self.X_train = None
         if X is not None:
@@ -116,7 +145,30 @@ class BSTS(object):
         self.mcmc.run(rng_key, self.y_train, self.X_train)
         self.samples = self.mcmc.get_samples()
 
-    def predict(self, future, X=None, rng_key=random.PRNGKey(1)):
+    def predict(self,
+                future: int,
+                X: Optional[np.ndarray] = None,
+                rng_key: jnp.DeviceArray = random.PRNGKey(1)
+                ) -> jnp.DeviceArray:
+        """Returns samples from the posterior predictive about the future
+        trajectory
+
+        Parameters
+        ----------
+        future : int
+            Number of steps into the future to forecast
+        X : Optional[np.ndarray]
+            Optional covariates. If the model has been fitted with covariates,
+            this will be needed.
+        rng_key : jnp.DeviceArray
+            Jax random key to use
+
+        Returns
+        -------
+        jnp.DeviceArray
+            Samples from the posterior predictive of shape
+            `(num_samples, future)`
+        """
         if self.samples is None:
             raise ValueError(
                 'Model must be fit before prediction.'
@@ -133,6 +185,8 @@ class BSTS(object):
         return self.scaler.inv_transform(preds)
 
     def plot(self):
+        """Plots the in-sample fit and components of the model
+        """
         if self.samples is None:
             raise ValueError(
                 'Model must be fit before prediction.'
@@ -169,7 +223,19 @@ class BSTS(object):
             axes[3].set_title('Seasonality')
         return fig, axes
 
-    def plot_future(self, y_future, X_future=None):
+    def plot_future(self,
+                    y_future: np.ndarray,
+                    X_future: Optional[np.ndarray] = None):
+        """Plots the future trajectory vs predicted trajectory
+
+        Parameters
+        ----------
+        y_future : np.ndarray
+            The future trajectory of y
+        X_future : Optional[np.ndarray]
+            Optional covariates. Must be provided if the model was fit with
+            covariates
+        """
         forecast = self.predict(len(y_future), X_future)
         mean_forecast = forecast.mean(axis=0)
         std_forecast = forecast.std(axis=0)
@@ -207,7 +273,19 @@ class BSTS(object):
         ax.legend()
         return ax
 
-    def plot_impact(self, y_future, X_future=None):
+    def plot_impact(self,
+                    y_future: np.ndarray,
+                    X_future: Optional[np.ndarray] = None):
+        """Plots the impact of the future trajectory
+
+        Parameters
+        ----------
+        y_future : np.ndarray
+            The future trajectory of y
+        X_future : Optional[np.ndarray]
+            Optional covariates. Must be provided if the model was fit with
+            covariates
+        """
         forecast = self.predict(len(y_future), X_future)
         mean_forecast = forecast.mean(axis=0)
         std_forecast = forecast.std(axis=0)

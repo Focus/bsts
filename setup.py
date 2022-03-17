@@ -1,7 +1,7 @@
 import setuptools
 from pathlib import Path
 
-with open('README.rst', 'r') as fh:
+with open('README.md', 'r') as fh:
     long_description = fh.read()
 
 
@@ -18,13 +18,14 @@ setuptools.setup(
     description='Python library for Bayesian structural time series',
     long_description=long_description,
     long_description_content_type='text/markdown',
+    url='https://github.com/Focus/bsts',
     packages=setuptools.find_packages(
         include=['bsts', 'bsts.*'],
     ),
     classifiers=[
         'Programming Language :: Python :: 3',
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.5',
     install_requires=load_req('requirements.in'),
     include_package_data=True,
 )
